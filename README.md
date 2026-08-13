@@ -1,19 +1,45 @@
-# Proyecto Final — Ingeniería de Datos con Python
+# ✈️ Flight Data Engineering 2024
 
-## 1. Descripción general
+## Descripción
 
-Este proyecto consiste en el diseño e implementación de un **pipeline de ingeniería de datos end-to-end**, utilizando **Python** y **Google Cloud Platform (GCP) o Amazon Web Services (AWS) o Microsoft Azure**, siguiendo una arquitectura **Bronze / Silver / Gold**.
+Proyecto de Ingeniería de Datos enfocado en el procesamiento y análisis de información de vuelos durante 2024.
 
-El pipeline integra **múltiples fuentes de datos reales**, aplica procesos de **ETL**, y almacena los resultados finales en la nube, listos para análisis y toma de decisiones.
+El proyecto implementa un pipeline **end-to-end** utilizando Python y AWS, siguiendo una arquitectura **Bronze / Silver / Gold** y buenas prácticas de Data Engineering.
 
----
+## Arquitectura
 
-## 2. Objetivo del proyecto
+El pipeline integrará datos de vuelos y fuentes complementarias, aplicará procesos de extracción, transformación y validación, y almacenará los datos procesados en AWS.
 
-Diseñar y desarrollar un pipeline de datos que:
+La orquestación del pipeline se realizará utilizando **Apache Airflow**.
 
-- Integre múltiples fuentes heterogéneas
-- Aplique transformaciones consistentes y reproducibles
-- Almacene los datos en la nube de forma eficiente
-- Pueda ejecutarse de forma automatizada
-- Refleje buenas prácticas profesionales de Ingeniería de Datos
+### Tecnologías
+
+- Python
+- Apache Airflow
+- Amazon S3
+- AWS Glue
+- PySpark
+- Amazon Athena
+- Git / GitHub
+
+## Capas de datos
+
+### 🥉 Bronze
+
+Datos originales, almacenados sin transformaciones significativas.
+
+### 🥈 Silver
+
+Datos limpiados, tipados y estandarizados.
+
+### 🥇 Gold
+
+Datos enriquecidos y preparados para análisis.
+
+## Objetivo
+
+Construir un pipeline reproducible y automatizado que permita transformar datos de vuelos en datasets confiables para análisis y toma de decisiones.
+
+## Estado del proyecto
+
+🚧 En desarrollo
