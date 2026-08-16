@@ -81,3 +81,6 @@ terraform.tfstate.*
 data/
 data_samples/*
 !data_samples/README.md
+# AWS CLI local installation
+aws/
+awscliv2.zip

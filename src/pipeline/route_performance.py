@@ -11,7 +11,9 @@ def create_route_performance():
 
     print("Creando Gold: route_performance...")
 
-    files = sorted(SILVER_PATH.glob("*.parquet"))
+    files = sorted(
+    SILVER_PATH.glob("event_date=*/*.parquet")
+    )
 
     results = []
 

@@ -8,9 +8,9 @@ def save_bronze(
     output_dir: str,
 ) -> int:
     """
-    Guarda los chunks del dataset en formato Parquet.
+    Guarda los chunks del dataset en Bronze.
 
-    Cada chunk se almacena como un archivo independiente.
+    Los datos se particionan por event_date utilizando fl_date.
     """
 
     output_path = Path(output_dir)
@@ -20,21 +20,52 @@ def save_bronze(
 
     for chunk_number, chunk in enumerate(chunks):
 
-        file_path = output_path / f"part-{chunk_number:05d}.parquet"
-
-        chunk.to_parquet(
-            file_path,
-            engine="pyarrow",
-            index=False,
+        chunk["fl_date"] = pd.to_datetime(
+            chunk["fl_date"],
+            errors="coerce",
         )
 
-        total_rows += len(chunk)
+        chunk = chunk.dropna(subset=["fl_date"])
 
-        print(
-            f"Bronze: {file_path.name} "
-            f"({len(chunk):,} registros)"
-        )
+        dates = chunk["fl_date"].dt.strftime("%Y-%m-%d").unique()
 
-    print(f"\nTotal Bronze: {total_rows:,} registros")
+        for event_date in dates:
+
+            date_chunk = chunk[
+                chunk["fl_date"].dt.strftime("%Y-%m-%d") == event_date
+            ]
+
+            partition_path = (
+                output_path
+                / f"event_date={event_date}"
+            )
+
+            partition_path.mkdir(
+                parents=True,
+                exist_ok=True,
+            )
+
+            file_path = (
+                partition_path
+                / f"part-{chunk_number:05d}.parquet"
+            )
+
+            date_chunk.to_parquet(
+                file_path,
+                engine="pyarrow",
+                index=False,
+            )
+
+            total_rows += len(date_chunk)
+
+            print(
+                f"Bronze: {file_path} "
+                f"({len(date_chunk):,} registros)"
+            )
+
+    print(
+        f"\nTotal Bronze: "
+        f"{total_rows:,} registros"
+    )
 
     return total_rows

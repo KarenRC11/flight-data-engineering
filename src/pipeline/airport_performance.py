@@ -11,7 +11,9 @@ def create_airport_performance():
 
     print("Creando Gold: airport_performance...")
 
-    files = sorted(SILVER_PATH.glob("*.parquet"))
+    files = sorted(
+    SILVER_PATH.glob("event_date=*/*.parquet")
+    )
 
     departure_results = []
     arrival_results = []

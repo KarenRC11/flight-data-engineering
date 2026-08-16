@@ -116,7 +116,7 @@ def enrich_chunk(
 
 
 def enrich_flights():
-    """Procesa todos los archivos Silver de vuelos."""
+    """Procesa todos los archivos Silver de vuelos y conserva event_date."""
 
     print("Cargando catálogos...")
 
@@ -131,17 +131,34 @@ def enrich_flights():
     )
 
     files = sorted(
-        FLIGHTS_DIR.glob("*.parquet")
+        FLIGHTS_DIR.glob("event_date=*/*.parquet")
     )
 
     total_rows = 0
     total_chunks = 0
 
+    print(f"\nArchivos Silver encontrados: {len(files):,}")
+
     for file in files:
 
-        print(f"\nProcesando: {file.name}")
+        event_date_partition = file.parent.name
+
+        print(
+            f"\nProcesando: "
+            f"{event_date_partition}/{file.name}"
+        )
 
         df = pd.read_parquet(file)
+
+        output_dir = (
+            OUTPUT_DIR
+            / event_date_partition
+        )
+
+        output_dir.mkdir(
+            parents=True,
+            exist_ok=True,
+        )
 
         for start in range(
             0,
@@ -160,7 +177,7 @@ def enrich_flights():
             )
 
             output_file = (
-                OUTPUT_DIR
+                output_dir
                 / f"{file.stem}_{start // CHUNK_SIZE:05d}.parquet"
             )
 
@@ -173,14 +190,23 @@ def enrich_flights():
             total_chunks += 1
 
         print(
-            f"  Filas procesadas: {len(df):,}"
+            f"  Filas procesadas: "
+            f"{len(df):,}"
         )
 
     print("\nEnrichment terminado")
-    print(f"Chunks generados: {total_chunks:,}")
-    print(f"Filas procesadas: {total_rows:,}")
-    print(f"Salida: {OUTPUT_DIR}")
-
+    print(
+        f"Chunks generados: "
+        f"{total_chunks:,}"
+    )
+    print(
+        f"Filas procesadas: "
+        f"{total_rows:,}"
+    )
+    print(
+        f"Salida: {OUTPUT_DIR}"
+    )
+                       
 
 if __name__ == "__main__":
     enrich_flights()

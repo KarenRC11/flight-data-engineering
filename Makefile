@@ -11,6 +11,7 @@ test:
 
 run:
 	. .venv/bin/activate && python -m pipeline.main
+	. .venv/bin/activate && python -m pipeline.load.upload
 
 lint:
 	. .venv/bin/activate && python -m compileall src
