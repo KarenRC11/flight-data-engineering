@@ -437,6 +437,275 @@ make lint
 
 ---
 
+## 🔁 Reproducción del proyecto
+
+El proyecto puede ser reproducido a partir del repositorio de GitHub y de los datasets públicos utilizados como fuentes de datos.
+
+Los archivos de datos no se incluyen en el repositorio debido a su tamaño. Deben descargarse previamente y colocarse en las rutas indicadas.
+
+### 1. Clonar el repositorio
+
+```bash
+git clone https://github.com/KarenRC11/flight-data-engineering.git
+cd flight-data-engineering
+```
+
+### 2. Crear y activar el entorno virtual
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+```
+
+En Windows PowerShell:
+
+```powershell
+.venv\Scripts\Activate.ps1
+```
+
+### 3. Instalar dependencias
+
+```bash
+pip install -r requirements.txt
+```
+
+También puede utilizarse:
+
+```bash
+make install
+```
+
+### 4. Descargar los datasets
+
+El pipeline utiliza dos fuentes públicas de datos disponibles en Kaggle.
+
+#### 4.1 Flight Data 2024
+
+Dataset principal utilizado para el procesamiento de vuelos:
+
+[Flight Data 2024 — Kaggle](https://www.kaggle.com/datasets/hrishitpatil/flight-data-2024?utm_source=chatgpt.com)
+
+Descargar el archivo correspondiente al dataset y colocarlo en:
+
+```text
+data/raw/flight_data_2024.csv
+```
+
+#### 4.2 Global Air Transportation Network
+
+Los catálogos utilizados para el enriquecimiento de los vuelos provienen del siguiente dataset:
+
+[Global Air Transportation Network — Kaggle](https://www.kaggle.com/datasets/thedevastator/global-air-transportation-network-mapping-the-wo?utm_source=chatgpt.com)
+
+Los archivos requeridos son:
+
+```text
+airlines.csv
+airplanes.csv
+airports.csv
+routes.csv
+```
+
+Deben colocarse en:
+
+```text
+data/raw/catalogs/
+├── airlines.csv
+├── airplanes.csv
+├── airports.csv
+└── routes.csv
+```
+
+La estructura final esperada de los datos de entrada es:
+
+```text
+data/
+└── raw/
+    ├── flight_data_2024.csv
+    └── catalogs/
+        ├── airlines.csv
+        ├── airplanes.csv
+        ├── airports.csv
+        └── routes.csv
+```
+
+> Los datasets no se incluyen directamente en el repositorio debido a su tamaño y para mantener separados el código fuente y los datos de entrada.
+
+### 5. Configurar variables de entorno
+
+Copiar la plantilla de configuración:
+
+```bash
+cp .env.example .env
+```
+
+Configurar las variables correspondientes al entorno de ejecución.
+
+Ejemplo:
+
+```env
+PROJECT_ENV=dev
+INPUT_FILE_PATH=./data/raw/flight_data_2024.csv
+OUTPUT_DIR=./data
+CLOUD_PROVIDER=aws
+AWS_REGION=us-east-1
+S3_BUCKET=your-bucket-name
+S3_PREFIX=flight-data-engineering
+```
+
+Para ejecutar el procesamiento local no es necesario utilizar un bucket propio de S3.
+
+Para publicar los resultados Gold en Amazon S3 se requiere:
+
+* Una cuenta de AWS.
+* AWS CLI configurado.
+* Credenciales válidas.
+* Permisos de escritura sobre el bucket configurado.
+* Un bucket existente.
+
+> Nunca subir credenciales, Access Keys, Secrets o archivos `.env` al repositorio.
+
+### 6. Ejecutar las pruebas
+
+Antes de ejecutar el pipeline:
+
+```bash
+make test
+```
+
+El proyecto utiliza `pytest` para validar las transformaciones y reglas de calidad.
+
+### 7. Validar el código
+
+Ejecutar:
+
+```bash
+make lint
+```
+
+Esto valida que los módulos Python puedan compilarse correctamente.
+
+### 8. Ejecutar el pipeline
+
+Ejecutar el pipeline completo mediante:
+
+```bash
+make run
+```
+
+El flujo ejecuta:
+
+```text
+Flight Data 2024
+      ↓
+    Extract
+      ↓
+    Bronze
+      ↓
+   Profiling
+      ↓
+Silver - Flights
+      ↓
+Silver - Catalogs
+      ↓
+  Enrichment
+      ↓
+     Gold
+      ↓
+ Amazon S3
+```
+
+El pipeline genera tres datasets analíticos Gold:
+
+```text
+data/gold/
+├── airline_performance/
+│   └── airline_performance.parquet
+├── airport_performance/
+│   └── airport_performance.parquet
+└── route_performance/
+    └── route_performance.parquet
+```
+
+Cuando AWS está configurado correctamente, los datasets Gold se publican en Amazon S3.
+
+### 9. Resultados esperados
+
+Con los datasets utilizados durante el desarrollo, el pipeline produjo:
+
+* **7,079,081 registros** de vuelos.
+* **366 particiones diarias** en Bronze.
+* **7,079,081 registros** procesados en Silver.
+* **436 chunks** durante el enriquecimiento.
+* **348 aeropuertos** analizados.
+* **6,805 rutas** analizadas.
+* **3 datasets Gold**.
+* **0 archivos con errores de Data Quality**.
+* Tests exitosos.
+* Validación de compilación exitosa.
+
+Los resultados pueden variar si las versiones de los datasets de Kaggle cambian.
+
+### 10. Estructura de datos generada
+
+Después de ejecutar el pipeline, se generan las siguientes capas:
+
+```text
+data/
+├── raw/
+│   ├── flight_data_2024.csv
+│   └── catalogs/
+│       ├── airlines.csv
+│       ├── airplanes.csv
+│       ├── airports.csv
+│       └── routes.csv
+│
+├── bronze/
+│   ├── flights/
+│   ├── airlines/
+│   ├── airplanes/
+│   ├── airports/
+│   └── routes/
+│
+├── silver/
+│   ├── flights/
+│   ├── flights_enriched/
+│   ├── airlines/
+│   ├── airplanes/
+│   ├── airports/
+│   └── routes/
+│
+└── gold/
+    ├── airline_performance/
+    ├── airport_performance/
+    └── route_performance/
+```
+
+### 11. Reproducción mínima
+
+Para reproducir el proyecto desde cero:
+
+```bash
+git clone https://github.com/KarenRC11/flight-data-engineering.git
+cd flight-data-engineering
+
+python -m venv .venv
+source .venv/bin/activate
+
+pip install -r requirements.txt
+
+cp .env.example .env
+
+# Descargar y colocar los datasets en data/raw/
+
+make test
+make lint
+make run
+```
+
+Con esto se puede reproducir el pipeline completo a partir del código versionado y de las fuentes de datos públicas.
+
+
 ## 🚧 Próximas etapas
 
 El proyecto está diseñado para evolucionar hacia una arquitectura cloud más completa.
@@ -456,7 +725,7 @@ Próximas mejoras:
 
 ## 👩‍💻 Autor
 
-**Karen**
+**Karen Reglero**
 
 Data Engineering Project — 2024 Flight Data
 
