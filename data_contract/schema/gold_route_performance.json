@@ -1,0 +1,48 @@
+{
+  "name": "route_performance",
+  "description": "Data contract for origin-destination route performance metrics.",
+  "layer": "gold",
+  "format": "Parquet",
+  "columns": {
+    "origin": {
+      "type": "string",
+      "required": true
+    },
+    "dest": {
+      "type": "string",
+      "required": true
+    },
+    "total_flights": {
+      "type": "integer",
+      "required": true
+    },
+    "cancelled_flights": {
+      "type": "integer",
+      "required": true
+    },
+    "diverted_flights": {
+      "type": "integer",
+      "required": true
+    },
+    "delayed_flights": {
+      "type": "integer",
+      "required": true
+    },
+    "avg_arrival_delay": {
+      "type": "numeric",
+      "required": true
+    },
+    "avg_distance": {
+      "type": "numeric",
+      "required": true
+    },
+    "delay_rate": {
+      "type": "numeric",
+      "required": true
+    },
+    "cancellation_rate": {
+      "type": "numeric",
+      "required": true
+    }
+  }
+}

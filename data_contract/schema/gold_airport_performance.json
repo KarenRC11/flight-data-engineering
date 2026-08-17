@@ -1,0 +1,44 @@
+{
+  "name": "airport_performance",
+  "description": "Data contract for airport-level performance metrics.",
+  "layer": "gold",
+  "format": "Parquet",
+  "columns": {
+    "airport": {
+      "type": "string",
+      "required": true
+    },
+    "total_departures": {
+      "type": "integer",
+      "required": true
+    },
+    "cancelled_departures": {
+      "type": "integer",
+      "required": true
+    },
+    "diverted_departures": {
+      "type": "integer",
+      "required": true
+    },
+    "delayed_arrivals": {
+      "type": "integer",
+      "required": true
+    },
+    "total_arrivals": {
+      "type": "integer",
+      "required": true
+    },
+    "arrival_delay_rate": {
+      "type": "numeric",
+      "required": true
+    },
+    "cancellation_rate": {
+      "type": "numeric",
+      "required": true
+    },
+    "avg_arrival_delay": {
+      "type": "numeric",
+      "required": true
+    }
+  }
+}

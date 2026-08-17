@@ -1,0 +1,54 @@
+{
+  "name": "flight_data_bronze",
+  "description": "Data contract for the Bronze layer containing raw flight records with minimal transformations.",
+  "layer": "bronze",
+  "format": "Parquet",
+  "partitioning": {
+    "column": "event_date",
+    "pattern": "YYYY-MM-DD"
+  },
+  "required_columns": [
+    "event_date",
+    "op_unique_carrier",
+    "origin",
+    "dest",
+    "cancelled",
+    "diverted",
+    "arr_delay",
+    "distance"
+  ],
+  "columns": {
+    "event_date": {
+      "type": "date",
+      "required": true
+    },
+    "op_unique_carrier": {
+      "type": "string",
+      "required": true
+    },
+    "origin": {
+      "type": "string",
+      "required": true
+    },
+    "dest": {
+      "type": "string",
+      "required": true
+    },
+    "cancelled": {
+      "type": "numeric",
+      "required": true
+    },
+    "diverted": {
+      "type": "numeric",
+      "required": true
+    },
+    "arr_delay": {
+      "type": "numeric",
+      "required": false
+    },
+    "distance": {
+      "type": "numeric",
+      "required": false
+    }
+  }
+}

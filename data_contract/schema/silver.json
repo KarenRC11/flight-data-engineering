@@ -1,0 +1,61 @@
+{
+  "name": "flight_data_silver",
+  "description": "Data contract for the Silver layer containing cleaned, standardized and enriched flight records.",
+  "layer": "silver",
+  "format": "Parquet",
+  "partitioning": {
+    "column": "event_date",
+    "pattern": "YYYY-MM-DD"
+  },
+  "required_columns": [
+    "event_date",
+    "op_unique_carrier",
+    "origin",
+    "dest",
+    "cancelled",
+    "diverted",
+    "arr_delay",
+    "distance"
+  ],
+  "columns": {
+    "event_date": {
+      "type": "date",
+      "required": true
+    },
+    "op_unique_carrier": {
+      "type": "string",
+      "required": true
+    },
+    "origin": {
+      "type": "string",
+      "required": true
+    },
+    "dest": {
+      "type": "string",
+      "required": true
+    },
+    "cancelled": {
+      "type": "numeric",
+      "required": true
+    },
+    "diverted": {
+      "type": "numeric",
+      "required": true
+    },
+    "arr_delay": {
+      "type": "numeric",
+      "required": false
+    },
+    "distance": {
+      "type": "numeric",
+      "required": false
+    }
+  },
+  "quality_rules": [
+    "Required columns must be present.",
+    "event_date must contain valid dates.",
+    "origin and dest must contain valid airport codes.",
+    "Numeric measures must contain valid numeric values.",
+    "Records must be suitable for downstream Gold aggregations."
+  ]
+}
