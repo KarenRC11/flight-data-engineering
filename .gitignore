@@ -84,3 +84,7 @@ data_samples/*
 # AWS CLI local installation
 aws/
 awscliv2.zip
+
+# Python cache files
+__pycache__/
+*.pyc

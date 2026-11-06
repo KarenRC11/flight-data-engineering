@@ -1,0 +1,113 @@
+-- =====================================================
+-- PROJECT: Flight Data Engineering
+-- PHASE 2: Snowflake Integration
+-- FILE: 05_audit_monitoring.sql
+-- DESCRIPTION: Query error auditing and monitoring
+-- =====================================================
+
+-- 1. Create audit table
+
+CREATE TABLE IF NOT EXISTS FLIGHT_DATA_DB.AUDIT.QUERY_ERRORS (
+    QUERY_ID VARCHAR(100),
+    USER_NAME VARCHAR(100),
+    ROLE_NAME VARCHAR(100),
+    START_TIME TIMESTAMP_LTZ,
+    QUERY_TYPE VARCHAR(50),
+    ERROR_CODE NUMBER,
+    ERROR_MESSAGE VARCHAR(16777216),
+    QUERY_TEXT VARCHAR(16777216),
+    CAPTURED_AT TIMESTAMP_LTZ DEFAULT CURRENT_TIMESTAMP()
+);
+
+-- 2. Capture failed queries from Snowflake Query History
+
+MERGE INTO FLIGHT_DATA_DB.AUDIT.QUERY_ERRORS AS TARGET
+
+USING (
+    SELECT
+        QUERY_ID,
+        USER_NAME,
+        ROLE_NAME,
+        START_TIME,
+        QUERY_TYPE,
+        ERROR_CODE,
+        ERROR_MESSAGE,
+        QUERY_TEXT
+
+    FROM TABLE(
+        FLIGHT_DATA_DB.INFORMATION_SCHEMA.QUERY_HISTORY(
+            DATEADD('hour', -24, CURRENT_TIMESTAMP()),
+            CURRENT_TIMESTAMP(),
+            10000
+        )
+    )
+
+    WHERE EXECUTION_STATUS = 'FAILED_WITH_ERROR'
+
+) AS SOURCE
+
+ON TARGET.QUERY_ID = SOURCE.QUERY_ID
+
+WHEN NOT MATCHED THEN INSERT (
+    QUERY_ID,
+    USER_NAME,
+    ROLE_NAME,
+    START_TIME,
+    QUERY_TYPE,
+    ERROR_CODE,
+    ERROR_MESSAGE,
+    QUERY_TEXT
+)
+VALUES (
+    SOURCE.QUERY_ID,
+    SOURCE.USER_NAME,
+    SOURCE.ROLE_NAME,
+    SOURCE.START_TIME,
+    SOURCE.QUERY_TYPE,
+    SOURCE.ERROR_CODE,
+    SOURCE.ERROR_MESSAGE,
+    SOURCE.QUERY_TEXT
+);
+
+-- 3. Create monitoring view
+
+CREATE OR REPLACE VIEW
+    FLIGHT_DATA_DB.AUDIT.V_QUERY_ERROR_MONITOR AS
+
+SELECT
+    QUERY_ID,
+    USER_NAME,
+    ROLE_NAME,
+    START_TIME,
+    TO_DATE(START_TIME) AS ERROR_DATE,
+    ERROR_CODE,
+    ERROR_MESSAGE,
+
+    CASE
+        WHEN ERROR_MESSAGE ILIKE '%not authorized%'
+          OR ERROR_MESSAGE ILIKE '%insufficient privileges%'
+          OR ERROR_MESSAGE ILIKE '%access denied%'
+            THEN 'POSIBLE ERROR DE PERMISOS'
+
+        WHEN ERROR_MESSAGE ILIKE '%syntax%'
+          OR ERROR_MESSAGE ILIKE '%unexpected%'
+            THEN 'ERROR DE SINTAXIS'
+
+        ELSE 'OTRO ERROR'
+    END AS ERROR_CATEGORY,
+
+    CAPTURED_AT
+
+FROM FLIGHT_DATA_DB.AUDIT.QUERY_ERRORS;
+
+-- 4. Validate audit results
+
+SELECT
+    ERROR_CATEGORY,
+    COUNT(*) AS TOTAL_ERRORS
+
+FROM FLIGHT_DATA_DB.AUDIT.V_QUERY_ERROR_MONITOR
+
+GROUP BY ERROR_CATEGORY
+
+ORDER BY TOTAL_ERRORS DESC;
