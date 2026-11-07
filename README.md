@@ -4,9 +4,14 @@
 
 ## Descripción
 
-Proyecto de Ingeniería de Datos para el procesamiento y análisis de información de vuelos durante 2024.
 
-El proyecto implementa un pipeline **end-to-end** utilizando Python y AWS, siguiendo una arquitectura **Bronze / Silver / Gold**, procesamiento por chunks, particionamiento por fecha, validaciones de calidad, enriquecimiento mediante catálogos y almacenamiento de resultados analíticos en Amazon S3.
+Proyecto end-to-end de Ingeniería de Datos para el procesamiento y análisis de más de 7 millones de registros de vuelos de 2024.
+
+Implementa un pipeline ETL con Python basado en arquitectura Medallion (Bronze, Silver y Gold), procesamiento por chunks, validaciones de calidad, enriquecimiento de datos y almacenamiento en Amazon S3.
+
+Integra Snowflake como Data Warehouse para la ingesta y consulta de datos analíticos, incorporando controles de acceso RBAC, Secure Views, monitoreo de errores y automatización con Snowflake Tasks.
+
+Incluye una aplicación de monitoreo con Streamlit y un pipeline de integración continua (CI) mediante GitHub Actions para ejecutar validaciones automatizadas con pytest.
 
 ---
 
@@ -30,56 +35,63 @@ El pipeline permite:
 
 ## 🏗️ Arquitectura
 
-```text
-                    ┌─────────────────────┐
-                    │  Flight Data 2024   │
-                    │       CSV           │
-                    └──────────┬──────────┘
-                               │
-                               ▼
-                    ┌─────────────────────┐
-                    │       BRONZE        │
-                    │                     │
-                    │ Raw + Parquet       │
-                    │ event_date          │
-                    └──────────┬──────────┘
-                               │
-                               ▼
-                    ┌─────────────────────┐
-                    │       SILVER        │
-                    │                     │
-                    │ Cleaning            │
-                    │ Standardization     │
-                    │ Data Quality         │
-                    └──────────┬──────────┘
-                               │
-                    ┌──────────┴──────────┐
-                    │                     │
-                    ▼                     ▼
-          ┌─────────────────┐   ┌─────────────────┐
-          │    Catalogs     │   │    Enrichment   │
-          │ Airports        │   │ Flights +       │
-          │ Airlines        │   │ Airports +      │
-          └─────────────────┘   │ Airlines        │
-                                └────────┬────────┘
-                                         │
-                                         ▼
-                              ┌─────────────────────┐
-                              │        GOLD         │
-                              │                     │
-                              │ Airline Performance │
-                              │ Airport Performance │
-                              │ Route Performance   │
-                              └──────────┬──────────┘
-                                         │
-                                         ▼
-                              ┌─────────────────────┐
-                              │      Amazon S3      │
-                              │                     │
-                              │ flight-data-        │
-                              │ engineering/gold/   │
-                              └─────────────────────┘
-```
+
+                         Flight Data 2024 (CSV)
+                                  |
+                                  v
+                       +---------------------+
+                       |       BRONZE        |
+                       | Raw Data / Parquet  |
+                       | Date Partitioning   |
+                       +----------+----------+
+                                  |
+                                  v
+                       +---------------------+
+                       |       SILVER        |
+                       | Cleaning            |
+                       | Data Quality        |
+                       | Catalog Enrichment  |
+                       +----------+----------+
+                                  |
+                                  v
+                       +---------------------+
+                       |        GOLD         |
+                       | Airline Performance |
+                       | Airport Performance |
+                       | Route Performance   |
+                       +----------+----------+
+                                  |
+                                  v
+                       +---------------------+
+                       |       AWS S3        |
+                       |    Parquet Files    |
+                       +----------+----------+
+                                  |
+                                  v
+                       +---------------------+
+                       |      SNOWFLAKE      |
+                       | Storage Integration |
+                       | External Stage      |
+                       | RAW / STAGING       |
+                       | MARTS / AUDIT       |
+                       +----------+----------+
+                                  |
+                   +--------------+--------------+
+                   |              |              |
+                   v              v              v
+              +----------+   +----------+   +----------+
+              | Analytics|   | Security |   |Monitoring|
+              | SQL Marts|   | RBAC     |   | Query    |
+              |          |   | Secure   |   | History  |
+              |          |   | Views    |   | Tasks    |
+              +----------+   +----------+   +----+-----+
+                                                   |
+                                                   v
+                                             +-----------+
+                                             | Streamlit |
+                                             +-----------+
+
+       GitHub Actions CI: Python validation + automated pytest tests
 
 ---
 
@@ -400,8 +412,12 @@ Los componentes se encuentran documentados en:
 
 ## 📁 Estructura del proyecto
 
-```text
+
 flight-data-engineering-2024/
+│
+├── .github/
+│   └── workflows/
+│       └── ci.yml
 │
 ├── data/
 │   ├── raw/
@@ -414,21 +430,34 @@ flight-data-engineering-2024/
 │       ├── extract/
 │       ├── transform/
 │       ├── load/
-│       ├── airport_performance.py
-│       ├── route_performance.py
-│       ├── gold.py
 │       ├── bronze.py
 │       ├── silver.py
-│       ├── profile.py
-│       ├── config.py
+│       ├── gold.py
 │       └── main.py
 │
+├── snowflake/
+│   ├── README.md
+│   ├── sql/
+│   │   ├── 01_database_setup.sql
+│   │   ├── 02_s3_integration.sql
+│   │   ├── 03_data_ingestion.sql
+│   │   ├── 04_rbac_security.sql
+│   │   ├── 05_audit_monitoring.sql
+│   │   ├── 06_tasks.sql
+│   │   ├── 07_secure_views.sql
+│   │   └── 08_analytical_marts.sql
+│   └── streamlit/
+│       └── streamlit_app.py
+│
 ├── tests/
+│   ├── test_quality.py
+│   └── test_transforms.py
+│
+├── pyproject.toml
 ├── Makefile
 ├── requirements.txt
-├── .env
 └── README.md
-```
+
 
 ---
 
