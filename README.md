@@ -1,5 +1,7 @@
 # ✈️ Flight Data Engineering 2024
 
+[![CI](https://github.com/KarenRC11/flight-data-engineering/actions/workflows/ci.yml/badge.svg)](https://github.com/KarenRC11/flight-data-engineering/actions/workflows/ci.yml)
+
 ## Descripción
 
 Proyecto de Ingeniería de Datos para el procesamiento y análisis de información de vuelos durante 2024.
@@ -256,6 +258,144 @@ S3_PREFIX=flight-data-engineering
 
 Las credenciales de AWS **no forman parte del repositorio**.
 
+
+## ❄️ Snowflake Integration
+
+El proyecto integra los datasets Gold almacenados en Amazon S3 con Snowflake para su consulta, análisis y gobierno de datos.
+
+### Arquitectura de integración
+
+```text
+Python ETL Pipeline
+        |
+        v
+Bronze → Silver → Gold
+        |
+        v
+     AWS S3
+   (Parquet files)
+        |
+        v
+Snowflake Storage Integration
+        |
+        v
+   External Stage
+        |
+        v
+   RAW Schema
+        |
+        v
+   MARTS Schema
+        |
+        v
+Analytical Queries
+```
+
+### Componentes implementados
+
+- **Storage Integration:** conexión segura entre Snowflake y AWS S3 mediante un rol IAM.
+- **External Stage:** acceso a los archivos Parquet almacenados en S3.
+- **COPY INTO:** carga de métricas Gold a tablas de Snowflake.
+- **RAW:** almacenamiento de los datos ingeridos.
+- **STAGING:** esquema para transformaciones y preparación de datos.
+- **MARTS:** tablas analíticas para consulta.
+- **AUDIT:** almacenamiento y monitoreo de errores de ejecución.
+
+### Analytical Mart
+
+Se implementó la tabla `FLIGHT_DATA_DB.MARTS.AIRLINE_PERFORMANCE_REAL`, utilizando datos reales procesados por el pipeline Python.
+
+Incluye métricas como:
+
+- Vuelos cancelados por aerolínea.
+- Vuelos retrasados por aerolínea.
+- Porcentaje de cancelaciones.
+- Promedio de retraso de llegada.
+
+Los scripts SQL se encuentran en el directorio `snowflake/sql/`.
+
+
+## 🔐 Data Governance & Security
+
+Se implementaron controles de acceso y protección de datos en Snowflake utilizando Role-Based Access Control (RBAC) y Secure Views.
+
+### Role-Based Access Control (RBAC)
+
+Se creó el rol `FLIGHT_ANALYST` para proporcionar acceso de solo lectura a los datos analíticos publicados en el esquema MARTS.
+
+Permisos implementados:
+
+- `USAGE` sobre el warehouse `COMPUTE_WH`.
+- `USAGE` sobre la base de datos `FLIGHT_DATA_DB`.
+- `USAGE` sobre el esquema `MARTS`.
+- `SELECT` sobre las tablas analíticas autorizadas.
+
+Se validó el acceso utilizando `USE ROLE FLIGHT_ANALYST` y `USE SECONDARY ROLES NONE`, para comprobar los permisos sin utilizar roles administrativos adicionales.
+
+### Secure Views & Data Protection
+
+Se implementó la vista `MARTS.V_PASSENGERS_SECURE` para demostrar la protección de información personal.
+
+La vista permite consultar información de pasajeros ficticios mostrando los correos electrónicos parcialmente ocultos.
+
+Ejemplo:
+
+`maria@example.com` → `*****@example.com`
+
+Esta implementación utiliza una Secure View con enmascaramiento fijo mediante SQL, no una política dinámica de Data Masking.
+
+### Security Principles
+
+- Principio de mínimo privilegio (*Least Privilege*).
+- Separación entre datos de origen (RAW) y datos de consumo (MARTS).
+- Acceso controlado mediante roles.
+- Protección de información sensible mediante vistas seguras.
+- Validación de permisos con roles secundarios desactivados.
+
+Los scripts de seguridad se encuentran en `snowflake/sql/`.
+
+
+## 📊 Data Monitoring & Automation
+
+Se implementó un mecanismo de monitoreo en Snowflake para identificar, clasificar y analizar errores de ejecución de consultas SQL.
+
+### Query Error Monitoring
+
+Se utiliza `INFORMATION_SCHEMA.QUERY_HISTORY` como fuente de información para identificar consultas que presentan errores.
+
+El proceso permite:
+
+- Consultar el historial de ejecuciones SQL.
+- Identificar consultas fallidas.
+- Registrar información de errores en el esquema `AUDIT`.
+- Actualizar los registros mediante sentencias `MERGE`.
+- Clasificar errores para facilitar su análisis y seguimiento.
+
+### Snowflake Tasks
+
+Se creó la tarea `TASK_QUERY_ERRORS` para automatizar la actualización del registro de errores.
+
+Características:
+
+- Frecuencia configurada: cada 60 minutos.
+- Ejecución mediante Snowflake Tasks.
+- Validación mediante ejecución manual exitosa.
+- Tarea actualmente suspendida para controlar el consumo de créditos del entorno de prueba.
+
+### Monitoring Dashboard with Streamlit
+
+Se desarrolló una aplicación de ejemplo utilizando Streamlit en Snowflake para visualizar información relacionada con el monitoreo de consultas.
+
+Esta implementación permite explorar cómo presentar indicadores operativos y registros de errores mediante una interfaz interactiva.
+
+### SQL & Application Files
+
+Los componentes se encuentran documentados en:
+
+- `snowflake/sql/05_audit_monitoring.sql`
+- `snowflake/sql/06_tasks.sql`
+- `snowflake/streamlit/streamlit_app.py`
+
 ---
 
 ## 📁 Estructura del proyecto
@@ -390,6 +530,49 @@ make test
 
 El proyecto utiliza `pytest`.
 
+
+## 🚀 Continuous Integration (CI) with GitHub Actions
+
+Se implementó un pipeline de integración continua utilizando GitHub Actions para validar automáticamente el código del proyecto.
+
+### CI Workflow
+
+El workflow se encuentra en:
+
+`.github/workflows/ci.yml`
+
+Se ejecuta automáticamente cuando se realizan:
+
+- Pushes a la rama `main`.
+- Pull Requests hacia la rama `main`.
+
+### Automated Validation
+
+El pipeline ejecuta los siguientes pasos:
+
+1. Descarga del repositorio mediante `actions/checkout`.
+2. Configuración del entorno con Python 3.11.
+3. Instalación del proyecto y dependencias de desarrollo.
+4. Validación de compilación del código Python.
+5. Ejecución de pruebas automatizadas con `pytest`.
+
+### CI Results
+
+La implementación inicial de CI se validó exitosamente:
+
+- **Workflow:** CI
+- **Status:** Successful
+- **Automated tests:** 2 passed
+- **Execution time:** aproximadamente 43 segundos
+
+Las pruebas actuales cubren validaciones iniciales de calidad y transformaciones. Se contempla ampliar su cobertura para incorporar más escenarios del pipeline ETL.
+
+### CI Status
+
+El estado actualizado del workflow puede consultarse mediante el badge de GitHub Actions ubicado al inicio de este README.
+
+Esta implementación permite detectar errores de forma temprana y validar automáticamente los cambios antes de continuar con nuevas funcionalidades.
+
 ---
 
 ## 🔍 Lint / Validación
@@ -404,18 +587,24 @@ make lint
 
 ## 🛠️ Tecnologías
 
-| Tecnología   | Uso                            |
-| ------------ | ------------------------------ |
-| Python       | Procesamiento y transformación |
-| Pandas       | Manipulación de datos          |
-| PyArrow      | Formato Parquet                |
-| Boto3        | Integración con AWS S3         |
-| Amazon S3    | Almacenamiento cloud           |
-| Pytest       | Testing                        |
-| Git          | Control de versiones           |
-| GitHub       | Repositorio                    |
-| Make         | Automatización de comandos     |
-| WSL / Ubuntu | Entorno de desarrollo          |
+
+| Categoría | Tecnología | Implementación |
+|---|---|---|
+| Programming | Python, Pandas | Procesamiento ETL y transformaciones |
+| Data Formats | PyArrow, Parquet | Almacenamiento columnar |
+| Data Architecture | Medallion Architecture | Capas Bronze, Silver y Gold |
+| Cloud Storage | AWS S3, Boto3 | Almacenamiento de datasets Gold |
+| Data Warehouse | Snowflake | Ingesta y consultas analíticas |
+| SQL | Snowflake SQL | Transformaciones, MERGE y consultas |
+| Data Governance | Snowflake RBAC | Roles y permisos de acceso |
+| Data Security | Secure Views | Protección de información |
+| Monitoring | Snowflake Query History | Auditoría y clasificación de errores |
+| Automation | Snowflake Tasks | Automatización programada de consultas |
+| Visualization | Streamlit | Aplicación de monitoreo |
+| Continuous Integration | GitHub Actions | Validación automática del código |
+| Testing | Pytest | Pruebas automatizadas |
+| Version Control | Git, GitHub | Gestión de versiones |
+| Development | WSL, Ubuntu, Make | Entorno de desarrollo y comandos |
 
 ---
 
@@ -706,22 +895,35 @@ make run
 Con esto se puede reproducir el pipeline completo a partir del código versionado y de las fuentes de datos públicas.
 
 
-## 🚧 Próximas etapas
+## 🚧 Roadmap & Future Improvements
 
-El proyecto está diseñado para evolucionar hacia una arquitectura cloud más completa.
+### ✅ Implementaciones completadas
 
-Próximas mejoras:
+- [x] Pipeline ETL con Python.
+- [x] Arquitectura Medallion: Bronze, Silver y Gold.
+- [x] Procesamiento de más de 7 millones de registros.
+- [x] Validaciones de calidad de datos.
+- [x] Publicación de datasets Gold en Amazon S3.
+- [x] Integración de AWS S3 con Snowflake.
+- [x] Creación de tablas analíticas en Snowflake.
+- [x] Implementación de RBAC y Secure Views.
+- [x] Auditoría y clasificación de errores SQL.
+- [x] Configuración y prueba de Snowflake Tasks.
+- [x] Aplicación de ejemplo con Streamlit.
+- [x] Integración continua con GitHub Actions.
+- [x] Ejecución automática de pruebas con pytest.
 
-* [ ] Automatización del pipeline.
-* [ ] Orquestación con Apache Airflow.
-* [ ] Procesamiento distribuido con PySpark / AWS Glue.
-* [ ] Catálogo de datos mediante AWS Glue Data Catalog.
-* [ ] Consultas analíticas mediante Amazon Athena.
-* [ ] Automatización CI/CD.
-* [ ] Monitoreo y logging.
-* [ ] Dashboard de análisis de vuelos.
+### 🔜 Próximas mejoras
 
----
+- [ ] Ampliar la cobertura de pruebas automatizadas.
+- [ ] Implementar orquestación del ETL con Apache Airflow.
+- [ ] Explorar procesamiento distribuido con PySpark / AWS Glue.
+- [ ] Incorporar AWS Glue Data Catalog.
+- [ ] Implementar consultas analíticas con Amazon Athena.
+- [ ] Desarrollar un dashboard de análisis de vuelos.
+- [ ] Incorporar validaciones de calidad en Snowflake.
+- [ ] Explorar despliegue automatizado (CD).
+
 
 ## 👩‍💻 Autor
 
