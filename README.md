@@ -410,8 +410,6 @@ Los componentes se encuentran documentados en:
 
 ---
 
-## 📁 Estructura del proyecto
-
 
 ## 📁 Estructura del proyecto
 
@@ -422,12 +420,43 @@ flight-data-engineering-2024/
 │   └── workflows/
 │       └── ci.yml
 │
+├── data/
+│   ├── raw/
+│   ├── bronze/
+│   ├── silver/
+│   └── gold/
+│
+├── src/
+│   └── pipeline/
+│       ├── extract/
+│       ├── transform/
+│       ├── load/
+│       ├── bronze.py
+│       ├── silver.py
+│       ├── gold.py
+│       └── main.py
+│
 ├── snowflake/
 │   ├── README.md
-│   └── sql/
+│   ├── sql/
+│   │   ├── 01_database_setup.sql
+│   │   ├── 02_s3_integration.sql
+│   │   ├── 03_data_ingestion.sql
+│   │   ├── 04_rbac_security.sql
+│   │   ├── 05_audit_monitoring.sql
+│   │   ├── 06_tasks.sql
+│   │   ├── 07_secure_views.sql
+│   │   └── 08_analytical_marts.sql
+│   └── streamlit/
+│       └── streamlit_app.py
 │
 ├── tests/
+│   ├── test_quality.py
+│   └── test_transforms.py
 │
+├── pyproject.toml
+├── Makefile
+├── requirements.txt
 └── README.md
 ```
 
