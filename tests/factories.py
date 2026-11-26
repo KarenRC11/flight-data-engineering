@@ -48,6 +48,6 @@ def flight(
         "is_cancelled": cancelled,
         "is_diverted": diverted,
         # Misma regla que transforms.transform_flights
-        "is_delayed": (arr_delay if arr_delay is not None else 0) > 15,
+        "is_delayed": (arr_delay if arr_delay is not None else 0) >= 15,
         "arr_delay": arr_delay,
     }

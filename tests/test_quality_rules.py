@@ -85,7 +85,7 @@ def transform_input(**overrides):
 
 @pytest.mark.parametrize(
     "arr_delay, expected",
-    [(16.0, True), (15.0, False), (-5.0, False), (None, False)],
+    [(16.0, True), (15.0, True), (14.0, False), (-5.0, False), (None, False)],
 )
 def test_is_delayed_threshold(arr_delay, expected):
     result = transform_flights(transform_input(arr_delay=arr_delay))
