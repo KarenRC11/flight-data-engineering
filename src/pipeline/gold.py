@@ -2,6 +2,8 @@ from pathlib import Path
 
 import pandas as pd
 
+from pipeline.contracts import enforce_contract
+
 
 SILVER_PATH = Path("data/silver/flights")
 GOLD_PATH = Path("data/gold")
@@ -110,6 +112,14 @@ def create_airline_performance():
     # ---------------------------------
     # Guardar Gold
     # ---------------------------------
+
+    # ---------------------------------
+    # VALIDAR DATA CONTRACT
+    # ---------------------------------
+    # Si el esquema no cumple el contrato, se detiene antes
+    # de escribir y publicar el archivo Gold.
+
+    enforce_contract(result, "gold_airline_performance")
 
     output_path = GOLD_PATH / "airline_performance"
 
