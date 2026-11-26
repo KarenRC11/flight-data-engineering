@@ -206,3 +206,9 @@ Run the SQL scripts in the following order:
 - Existing MARTS tables are not replaced automatically.
 - The Snowflake Task remains suspended until explicitly activated.
 - Review warehouse costs before enabling scheduled execution.
+
+## Automated Checks
+
+`tests/governance_checks.sql` verifies scripts 04, 07, 08, 09 and 10 after they run: analyst grants, tag classification, what each role sees through the masking policy, the role hierarchy, and that the Data Metric Function expectations pass on clean data and catch an invalid row. The last query returns one row per check with PASS / FAIL.
+
+It was run on a Snowflake Enterprise trial account with the real 2024 Gold data: **15 / 15 checks pass**. Run it in a test account only: it grants roles to the current user and briefly inserts one invalid row into the mart.
