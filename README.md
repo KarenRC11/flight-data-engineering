@@ -356,6 +356,18 @@ Ejemplo:
 
 Esta implementación utiliza una Secure View con enmascaramiento fijo mediante SQL, no una política dinámica de Data Masking.
 
+### Dynamic Data Masking por tags
+
+Como evolución de la Secure View, `snowflake/sql/09_dynamic_masking.sql` aplica enmascaramiento dinámico basado en tags:
+
+- El tag `GOVERNANCE.PII_TYPE` clasifica columnas personales (`EMAIL`, `NAME`).
+- Una sola masking policy, asociada al tag, protege cualquier columna clasificada en todas las tablas y vistas.
+- El rol `PII_READER` ve los valores reales; `FLIGHT_ANALYST`, e incluso `ACCOUNTADMIN` sin `PII_READER`, ven los valores enmascarados.
+
+### Data Quality en Snowflake
+
+`snowflake/sql/10_data_quality.sql` agrega Data Metric Functions con expectativas sobre `MARTS.AIRLINE_PERFORMANCE_REAL`: tabla no vacía, aerolínea no nula y única, porcentajes entre 0 y 100 y conteos no negativos. Se evalúan solo cuando la tabla cambia (`TRIGGER_ON_CHANGES`).
+
 ### Security Principles
 
 - Principio de mínimo privilegio (*Least Privilege*).
@@ -446,12 +458,19 @@ flight-data-engineering-2024/
 │   │   ├── 05_audit_monitoring.sql
 │   │   ├── 06_tasks.sql
 │   │   ├── 07_secure_views.sql
-│   │   └── 08_analytical_marts.sql
+│   │   ├── 08_analytical_marts.sql
+│   │   ├── 09_dynamic_masking.sql
+│   │   └── 10_data_quality.sql
 │   └── streamlit/
 │       └── streamlit_app.py
 │
 ├── tests/
+│   ├── conftest.py
+│   ├── factories.py
+│   ├── test_contracts.py
+│   ├── test_gold.py
 │   ├── test_quality.py
+│   ├── test_quality_rules.py
 │   └── test_transforms.py
 │
 ├── pyproject.toml
@@ -594,7 +613,12 @@ La implementación inicial de CI se validó exitosamente:
 - **Automated tests:** 2 passed
 - **Execution time:** aproximadamente 43 segundos
 
-Las pruebas actuales cubren validaciones iniciales de calidad y transformaciones. Se contempla ampliar su cobertura para incorporar más escenarios del pipeline ETL.
+Las pruebas cubren:
+
+- **Capa Gold:** las tres tablas se generan sobre una capa Silver sintética en un directorio temporal, sin necesidad del dataset completo.
+- **Data contracts:** cada tabla Gold se valida contra su contrato JSON (columnas, tipos, nulos y orden). El pipeline ejecuta la misma validación antes de escribir, así que un cambio de esquema detiene el proceso antes de llegar a S3.
+- **Reglas de calidad:** cada regla de `validate_flights` tiene un caso que debe fallar.
+- **Transformaciones:** umbral de retraso, distancias negativas, fechas inválidas y limpieza de códigos.
 
 ### CI Status
 
@@ -944,13 +968,15 @@ Con esto se puede reproducir el pipeline completo a partir del código versionad
 
 ### 🔜 Próximas mejoras
 
-- [ ] Ampliar la cobertura de pruebas automatizadas.
+- [x] Ampliar la cobertura de pruebas automatizadas.
+- [x] Validación automática de data contracts en la capa Gold.
 - [ ] Implementar orquestación del ETL con Apache Airflow.
 - [ ] Explorar procesamiento distribuido con PySpark / AWS Glue.
 - [ ] Incorporar AWS Glue Data Catalog.
 - [ ] Implementar consultas analíticas con Amazon Athena.
 - [ ] Desarrollar un dashboard de análisis de vuelos.
-- [ ] Incorporar validaciones de calidad en Snowflake.
+- [x] Incorporar validaciones de calidad en Snowflake (Data Metric Functions).
+- [x] Enmascaramiento dinámico de datos personales basado en tags.
 - [ ] Explorar despliegue automatizado (CD).
 
 
