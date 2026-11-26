@@ -28,9 +28,11 @@ ON SCHEMA FLIGHT_DATA_DB.MARTS
 TO ROLE FLIGHT_ANALYST;
 
 -- 5. Grant SELECT on analytical table
+-- (created in 08_analytical_marts.sql; this grant previously
+-- pointed to MARTS.AIRLINE_PERFORMANCE, which is never created)
 
 GRANT SELECT
-ON TABLE FLIGHT_DATA_DB.MARTS.AIRLINE_PERFORMANCE
+ON TABLE FLIGHT_DATA_DB.MARTS.AIRLINE_PERFORMANCE_REAL
 TO ROLE FLIGHT_ANALYST;
 
 -- 6. Grant access to secure view
@@ -51,7 +53,7 @@ TO ROLE FLIGHT_ANALYST;
 
 -- Expected: Access allowed
 -- SELECT *
--- FROM FLIGHT_DATA_DB.MARTS.AIRLINE_PERFORMANCE;
+-- FROM FLIGHT_DATA_DB.MARTS.AIRLINE_PERFORMANCE_REAL;
 
 -- Expected: Access denied
 -- SELECT *
