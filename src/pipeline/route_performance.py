@@ -2,6 +2,8 @@ from pathlib import Path
 
 import pandas as pd
 
+from pipeline.contracts import enforce_contract
+
 
 SILVER_PATH = Path("data/silver/flights")
 GOLD_PATH = Path("data/gold")
@@ -35,6 +37,9 @@ def create_route_performance():
         # ---------------------------------
         # MÉTRICAS POR RUTA
         # ---------------------------------
+        # Se guardan sumas y conteos parciales en lugar de promedios.
+        # Promediar los promedios de cada archivo daría el mismo peso
+        # a un día con 1 vuelo que a un día con 300.
 
         route = (
             df.groupby(["origin", "dest"])
@@ -43,8 +48,10 @@ def create_route_performance():
                 cancelled_flights=("is_cancelled", "sum"),
                 diverted_flights=("is_diverted", "sum"),
                 delayed_flights=("is_delayed", "sum"),
-                avg_arrival_delay=("arr_delay", "mean"),
-                avg_distance=("distance", "mean"),
+                arr_delay_sum=("arr_delay", "sum"),
+                arr_delay_count=("arr_delay", "count"),
+                distance_sum=("distance", "sum"),
+                distance_count=("distance", "count"),
             )
             .reset_index()
         )
@@ -63,9 +70,35 @@ def create_route_performance():
             cancelled_flights=("cancelled_flights", "sum"),
             diverted_flights=("diverted_flights", "sum"),
             delayed_flights=("delayed_flights", "sum"),
-            avg_arrival_delay=("avg_arrival_delay", "mean"),
-            avg_distance=("avg_distance", "mean"),
+            arr_delay_sum=("arr_delay_sum", "sum"),
+            arr_delay_count=("arr_delay_count", "sum"),
+            distance_sum=("distance_sum", "sum"),
+            distance_count=("distance_count", "sum"),
         )
+    )
+
+    # ---------------------------------
+    # PROMEDIOS PONDERADOS POR VUELO
+    # ---------------------------------
+    # Mismo criterio que airline_performance: suma total / conteo total.
+
+    result["avg_arrival_delay"] = (
+        result["arr_delay_sum"]
+        / result["arr_delay_count"]
+    )
+
+    result["avg_distance"] = (
+        result["distance_sum"]
+        / result["distance_count"]
+    )
+
+    result = result.drop(
+        columns=[
+            "arr_delay_sum",
+            "arr_delay_count",
+            "distance_sum",
+            "distance_count",
+        ]
     )
 
     # ---------------------------------
@@ -129,6 +162,14 @@ def create_route_performance():
     # ---------------------------------
     # GUARDAR GOLD
     # ---------------------------------
+
+    # ---------------------------------
+    # VALIDAR DATA CONTRACT
+    # ---------------------------------
+    # Si el esquema no cumple el contrato, se detiene antes
+    # de escribir y publicar el archivo Gold.
+
+    enforce_contract(result, "gold_route_performance")
 
     output_path = (
         GOLD_PATH / "route_performance"
