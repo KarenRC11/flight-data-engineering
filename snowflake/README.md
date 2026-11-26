@@ -46,6 +46,7 @@ The project uses four schemas:
 - `STAGING`: Data preparation and transformation.
 - `MARTS`: Analytical tables and views.
 - `AUDIT`: Query error monitoring.
+- `GOVERNANCE`: Tags, masking policies and data metric functions.
 
 ### 2. AWS S3 Integration
 
@@ -69,7 +70,33 @@ Created a Secure View to expose masked passenger email addresses.
 
 The masking is implemented through SQL expressions rather than Snowflake Dynamic Data Masking policies.
 
-### 6. Query Auditing
+### 6. Dynamic Data Masking (tag-based)
+
+`09_dynamic_masking.sql` moves PII protection from the view to the column:
+
+- A `PII_TYPE` tag classifies columns (`EMAIL`, `NAME`).
+- One masking policy is attached to the tag, so any column tagged later is masked automatically, in every table and view.
+- The `PII_READER` role sees real values; `FLIGHT_ANALYST` and even `ACCOUNTADMIN` (without `PII_READER`) see masked values.
+- `IS_ROLE_IN_SESSION` respects the role hierarchy, so access is granted by inheriting `PII_READER`.
+- Audit queries list which columns are tagged and which policies are in effect.
+
+The original fixed-mask Secure View (`07`) is kept for comparison.
+
+### 7. Data Quality Monitoring (Data Metric Functions)
+
+`10_data_quality.sql` adds quality checks inside Snowflake on `MARTS.AIRLINE_PERFORMANCE_REAL`:
+
+| Check | Metric | Expectation |
+|---|---|---|
+| Mart is not empty | `ROW_COUNT` | `> 0` |
+| Airline is never null | `NULL_COUNT(AIRLINE)` | `= 0` |
+| One row per airline | `DUPLICATE_COUNT(AIRLINE)` | `= 0` |
+| Cancellation % in 0–100 | custom `PCT_OUT_OF_RANGE` | `= 0` |
+| Counts are not negative | custom `NEGATIVE_COUNT` | `= 0` |
+
+Checks run with `TRIGGER_ON_CHANGES`, so they only consume credits when the mart is reloaded.
+
+### 8. Query Auditing
 
 Developed an auditing process using:
 
@@ -78,13 +105,13 @@ Developed an auditing process using:
 - Error classification with `CASE WHEN`
 - Audit tables and monitoring views
 
-### 7. Task Automation
+### 9. Task Automation
 
 Created a Snowflake Task configured for hourly execution.
 
 The task was tested successfully through manual execution and remains suspended to control trial credit consumption.
 
-### 8. Streamlit Dashboard
+### 10. Streamlit Dashboard
 
 Developed an interactive monitoring application featuring:
 
@@ -108,7 +135,11 @@ snowflake/
 │   ├── 03_data_ingestion.sql
 │   ├── 04_rbac_security.sql
 │   ├── 05_audit_monitoring.sql
-│   └── 06_tasks.sql
+│   ├── 06_tasks.sql
+│   ├── 07_secure_views.sql
+│   ├── 08_analytical_marts.sql
+│   ├── 09_dynamic_masking.sql
+│   └── 10_data_quality.sql
 ├── streamlit/
 │   └── streamlit_app.py
 └── README.md
@@ -122,6 +153,8 @@ snowflake/
 - SQL transformations
 - RBAC
 - Secure Views
+- Tag-based dynamic data masking
+- Data quality monitoring with Data Metric Functions
 - Query auditing
 - Snowflake Tasks
 - Streamlit monitoring dashboard
@@ -152,6 +185,8 @@ Run the SQL scripts in the following order:
 6. `04_rbac_security.sql`
 7. `05_audit_monitoring.sql`
 8. `06_tasks.sql`
+9. `09_dynamic_masking.sql`
+10. `10_data_quality.sql`
 
 ### Prerequisites
 
@@ -165,8 +200,15 @@ Run the SQL scripts in the following order:
 
 - Replace all infrastructure placeholders before execution.
 - Configure the AWS IAM trust relationship before accessing S3.
-- The RBAC script depends on the analytical table and secure view.
+- The RBAC script depends on the analytical table and secure view, and is the only place where `FLIGHT_ANALYST` receives grants.
+- Scripts `09` and `10` require Enterprise Edition (masking policies, tags and data metric functions).
 - The sample passenger table is intended for demonstration only.
 - Existing MARTS tables are not replaced automatically.
 - The Snowflake Task remains suspended until explicitly activated.
 - Review warehouse costs before enabling scheduled execution.
+
+## Automated Checks
+
+`tests/governance_checks.sql` verifies scripts 04, 07, 08, 09 and 10 after they run: analyst grants, tag classification, what each role sees through the masking policy, the role hierarchy, and that the Data Metric Function expectations pass on clean data and catch an invalid row. The last query returns one row per check with PASS / FAIL.
+
+It was run on a Snowflake Enterprise trial account with the real 2024 Gold data: **15 / 15 checks pass**. Run it in a test account only: it grants roles to the current user and briefly inserts one invalid row into the mart.

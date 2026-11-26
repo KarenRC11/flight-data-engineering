@@ -37,8 +37,10 @@ def transform_flights(df: pd.DataFrame) -> pd.DataFrame:
 
     df["is_diverted"] = df["diverted"].eq(1)
 
+    # El DOT considera retrasado un vuelo que llega 15 minutos
+    # o más tarde de lo programado (14 CFR 234.4), por eso >= 15.
     df["is_delayed"] = (
-        df["arr_delay"].fillna(0) > 15
+        df["arr_delay"].fillna(0) >= 15
     )
 
     # -----------------------------

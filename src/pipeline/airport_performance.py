@@ -2,6 +2,8 @@ from pathlib import Path
 
 import pandas as pd
 
+from pipeline.contracts import enforce_contract
+
 
 SILVER_PATH = Path("data/silver/flights")
 GOLD_PATH = Path("data/gold")
@@ -103,20 +105,26 @@ def create_airport_performance():
     # RELLENAR VALORES FALTANTES
     # ---------------------------------
 
-    numeric_columns = [
+    count_columns = [
         "total_departures",
         "cancelled_departures",
         "diverted_departures",
         "delayed_arrivals",
         "total_arrivals",
-        "arr_delay_sum",
         "arr_delay_count",
     ]
 
-    result[numeric_columns] = (
-        result[numeric_columns]
+    # El merge outer deja NaN en aeropuertos sin salidas o sin
+    # llegadas, y eso convierte los conteos a float (1234.0).
+    # Tras rellenar con 0 se regresan a entero, como pide el contrato.
+    # arr_delay_sum se queda en float: es una suma de minutos.
+    result[count_columns] = (
+        result[count_columns]
         .fillna(0)
+        .astype("int64")
     )
+
+    result["arr_delay_sum"] = result["arr_delay_sum"].fillna(0)
 
     # ---------------------------------
     # MÉTRICAS DE NEGOCIO
@@ -182,6 +190,14 @@ def create_airport_performance():
     # ---------------------------------
     # GUARDAR GOLD
     # ---------------------------------
+
+    # ---------------------------------
+    # VALIDAR DATA CONTRACT
+    # ---------------------------------
+    # Si el esquema no cumple el contrato, se detiene antes
+    # de escribir y publicar el archivo Gold.
+
+    enforce_contract(result, "gold_airport_performance")
 
     output_path = (
         GOLD_PATH / "airport_performance"

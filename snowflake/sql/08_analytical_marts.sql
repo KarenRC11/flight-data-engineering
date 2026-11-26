@@ -36,9 +36,8 @@ FROM FLIGHT_DATA_DB.MARTS.AIRLINE_PERFORMANCE_REAL
 ORDER BY CANCELLED_FLIGHTS DESC;
 
 -- ============================================================
--- RBAC: Grant read-only access to the analytical mart
+-- RBAC
 -- ============================================================
-
-GRANT SELECT
-ON TABLE FLIGHT_DATA_DB.MARTS.AIRLINE_PERFORMANCE_REAL
-TO ROLE FLIGHT_ANALYST;
+-- Read access for FLIGHT_ANALYST is granted in 04_rbac_security.sql.
+-- It cannot live here: in the documented execution order this file
+-- runs before 04, when the FLIGHT_ANALYST role does not exist yet.

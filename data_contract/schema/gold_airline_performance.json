@@ -26,7 +26,8 @@
     },
     "avg_arr_delay": {
       "type": "numeric",
-      "required": true
+      "required": false,
+      "description": "NULL when every flight of the carrier was cancelled or diverted (no arrival delay to average)."
     },
     "cancellation_rate": {
       "type": "numeric",
